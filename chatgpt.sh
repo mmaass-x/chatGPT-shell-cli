@@ -3,8 +3,8 @@
 # * extended to have a chat history that can be picked up
 # * fixed quit with multiline by adding escaped newlines in command reads; including fixof "-b | --big-prompt parameter (removed --multi-line-prompt)
 # * extend to echo model at fhe beginning and to select model by call name (using $0)
-# * exchanged glow for mdcat (fast!) with glow as fallback
-# * https://github.com/swsnr/mdcat
+# * added mdcat in addition to glow because mdcat is much faster. Kept glow as fallback
+# * link https://github.com/swsnr/mdcat
 # * added ability to change models
 # * added comands and parameters for recalling a chat
 # * added newchat command
