@@ -816,7 +816,7 @@ while $running; do
 		
 		#print session cost
 		ttusd=$(echo "scale=9; $TOTAL_COST_MICROCENT / 10000" | bc -l )
-		echo -e "\033[31m>>>Total session cost was \033[1m$(printf "%.7f" $tcusd) \$\033[0m<<<\033[0m"
+		echo -e "\033[31m>>>Total session cost was \033[1m$(printf "%.7f" $tcusd) \$\033[22m<<<\033[0m"
 		echo -e "> Total session cost was $(printf "%.7f" $tcusd) \$\n" >>~/.chatgpt_history
 		
 	#add help as a command
@@ -1152,6 +1152,6 @@ if [ ! -z "$pipe_mode_prompt" ]; then
 	fi
 	#print session cost
 	ttusd=$(echo "scale=9; $TOTAL_COST_MICROCENT / 10000" | bc -l )
-	echo -e "\033[31m>>>Total session cost was \033[1m$(printf "%.7f" $tcusd) \$\033[0m<<<\033[0m"
+	echo -e "\033[31m>>>Total session cost was \033[1m$(printf "%.7f" $tcusd) \$\033[22m<<<\033[0m"
 	echo -e "> Total session cost was $(printf "%.7f" $tcusd) \$\n" >>~/.chatgpt_history
 fi
