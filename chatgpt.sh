@@ -310,7 +310,7 @@ add_image_cost() {
 	TOTAL_COST_MICROCENT=$(echo "scale=4; $TOTAL_COST_MICROCENT + $tc" | bc -l )
 	ttusd=$(echo "scale=9; $TOTAL_COST_MICROCENT / 10000" | bc -l )
 	if $SHOW_INTERMEDIATE_COST ; then 
-		echo -e "\033[33m>>> Cost of this query \033[1m$(printf "%.7f" $tcusd) \$\033[22m and total so far \033[1m$(printf "%.7f" $ttusd) \$\033[0m<<<\033[0m" ; 
+		echo -e "\033[33m>>> Cost of this query \033[1m$(printf "%.7f" $tcusd) \$\033[22m and total so far \033[1m$(printf "%.7f" $ttusd) \$\033[22m<<<\033[0m" ; 
 		echo -e ">Query cost was $(printf "%.7f" $tcusd) \$ and total so far $(printf "%.7f" $ttusd) \$\n" >>~/.chatgpt_history ;
 	fi
 	if $DEBUG_CALLS ; then (echo -n -e "\033[32m" ; echo "Debug output. Usage cost are " ; echo "Image size $SIZE has microcent cost per image of $p" ; echo "There were $num images generated" ; echo "Cost of this query was $(printf "%.4f" $tc) microcent or $(printf "%.7f" $tcusd) \$" ; echo "Total session cost so far $(printf "%.7f" $ttusd) \$" ; echo -n -e "\033[0m" ) >&2 ; fi
@@ -327,7 +327,7 @@ EOF
 # display intermediate cost of a call
 display_intermediate_cost() {
 	if $SHOW_INTERMEDIATE_COST ; then 
-		echo -e "\033[33m>>> Cost of this query \033[1m$(printf "%.7f" $tcusd) \$\033[22m and total so far \033[1m$(printf "%.7f" $ttusd) \$\033[0m<<<\033[0m" ; 
+		echo -e "\033[33m>>> Cost of this query \033[1m$(printf "%.7f" $tcusd) \$\033[22m and total so far \033[1m$(printf "%.7f" $ttusd) \$\033[22m<<<\033[0m" ; 
 		echo -e ">Query cost was $(printf "%.7f" $tcusd) \$ and total so far $(printf "%.7f" $ttusd) \$\n" >>~/.chatgpt_history ;
 	fi
 }
