@@ -141,15 +141,18 @@ https://github.com/0xacx/chatGPT-shell-cli/
 
 By default the script uses the "gpt-3.5-turbo" model. if called through a link ending in "4" it defaults to use "gpt-4".
 Note that "gpt-4" is about 10x more expensive. Prices per 1K tokens (as of 9/1/2023) are:
-Model/context       Input     Output
-GPT-4 8K            $0.03     $0.06
-GPT-4 32K 	        $0.06     $0.12
-GPT-3.5-Turbo 4K    $0.0015   $0.002
-GPT-3.5-Turbo 16K   $0.003    $0.004
-Ada                 $0.0004   $0.0004
-Babbage             $0.0005   $0.0005
-Curie               $0.002    $0.002
-Davinci             $0.02     $0.02
+Model/context       	Input     Output
+GPT-4 Turbo         	$0.0100   $0.0300	(gpt-4-1106-preview)
+GPT-4V Turbo       		$0.0100   $0.0300	(gpt-4-vision-preview, gpt-4-1106-vision-preview = 85 tokens + 170 tokens per 512x512 tile)
+GPT-4               	$0.0300   $0.0600	(gpt-4)
+GPT-4 32K 	        	$0.0600   $0.1200	(gpt-4-32K)
+GPT-3.5-Turbo	   		$0.0010   $0.0020	(gpt-3.5-turbo-1106, gpt-3.5-turbo, gpt-3.5-turbo-0301)
+GPT-3.5-Turbo-Instruct	$0.0015   $0.0020	(gpt-3.5-turbo-instruct-0914, gpt-3.5-turbo-instruct)
+GPT-3.5-Turbo 16K   	$0.0030   $0.0040	(gpt-3.5-turbo-16k-0613, gpt-3.5-turbo-16k)
+Ada                 	$0.0004   $0.0004
+Babbage             	$0.0005   $0.0005
+Curie               	$0.0020   $0.0020
+Davinci             	$0.0200   $0.0200
 EOF
 cat <<EOF > /dev/null
 For image generation it is
@@ -236,7 +239,11 @@ add_cost() {
 	pi=0
 	po=0
 	case "$MODEL" in
-		gpt-3.5-turbo-0301 | gpt-3.5-turbo-0613 | gpt-3.5-turbo | gpt-3.5-turbo-instruct-0914 | gpt-3.5-turbo-instruct )
+		gpt-3.5-turbo-0301 | gpt-3.5-turbo-0613 | gpt-3.5-turbo-1106 | gpt-3.5-turbo )
+		pi=10
+		po=20
+		;;
+        gpt-3.5-turbo-instruct-0914 | gpt-3.5-turbo-instruct )
 		pi=15
 		po=20
 		;;
@@ -244,6 +251,10 @@ add_cost() {
 		pi=30
 		po=40
 		;;
+        gpt-4-1106-preview )
+        pi=10
+		po=30
+        ;;
 		gpt-4-0314 | gpt-4-0613 | gpt-4 )
 		pi=300
 		po=600
@@ -265,6 +276,7 @@ add_cost() {
 		po=200
 		;;
 		*)
+		echo -n -e "\033[31m\033[1mERROR - No pricing information for this model\033[0m" ; echo "." 
 		;;
 	esac
 	usdi=$(echo "scale=4; $pi / 10000" | bc -l )
@@ -276,14 +288,18 @@ add_cost() {
 	if $DEBUG_CALLS ; then (echo -n -e "\033[32m" ; echo "Debug output. Usage cost are " ; echo "$MODEL has microcent cost per 1K of $pi and $po" ; echo "There were $numi input and $numo output tokens" ; echo "Price for 1K token input is $(printf "%.4f" $usdi) and output is $(printf "%.4f" $usdo)" ; echo "Cost of this query was $(printf "%.4f" $tc) microcent or $(printf "%.7f" $tcusd) \$" ; echo "Total session cost so far $(printf "%.7f" $ttusd) \$" ; echo -n -e "\033[0m" ) >&2 ; fi
 
 cat <<EOF > /dev/null	
-GPT-4 8K            $0.0300   $0.0600
-GPT-4 32K 	        $0.0600   $0.1200
-GPT-3.5-Turbo 4K    $0.0015   $0.0020
-GPT-3.5-Turbo 16K   $0.0030   $0.0040
-Ada                 $0.0004   $0.0004
-Babbage             $0.0005   $0.0005
-Curie               $0.0020   $0.0020
-Davinci             $0.0200   $0.0200
+Updated 2023-11-08 TODO: 
+GPT-4 Turbo         	$0.0100   $0.0300	(gpt-4-1106-preview)
+GPT-4V Turbo       		$0.0100   $0.0300	(gpt-4-vision-preview, gpt-4-1106-vision-preview = 85 tokens + 170 tokens per 512x512 tile)
+GPT-4               	$0.0300   $0.0600	(gpt-4)
+GPT-4 32K 	        	$0.0600   $0.1200	(gpt-4-32K)
+GPT-3.5-Turbo	   		$0.0010   $0.0020	(gpt-3.5-turbo-1106, gpt-3.5-turbo, gpt-3.5-turbo-0301)
+GPT-3.5-Turbo-Instruct	$0.0015   $0.0020	(gpt-3.5-turbo-instruct-0914, gpt-3.5-turbo-instruct)
+GPT-3.5-Turbo 16K   	$0.0030   $0.0040	(gpt-3.5-turbo-16k-0613, gpt-3.5-turbo-16k)
+Ada                 	$0.0004   $0.0004
+Babbage             	$0.0005   $0.0005
+Curie               	$0.0020   $0.0020
+Davinci             	$0.0200   $0.0200
 EOF
 }
 
