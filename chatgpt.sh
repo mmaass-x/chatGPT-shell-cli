@@ -238,7 +238,7 @@ add_cost() {
 	numo=$2
 	pi=0
 	po=0
-	case "$MODEL" in
+	case "$OPENAI_MODEL" in
 		gpt-3.5-turbo-0301 | gpt-3.5-turbo-0613 | gpt-3.5-turbo-1106 | gpt-3.5-turbo )
 		pi=10
 		po=20
@@ -285,7 +285,7 @@ add_cost() {
 	tcusd=$(echo "scale=9; $tc / 10000" | bc -l )
 	TOTAL_COST_MICROCENT=$(echo "scale=4; $TOTAL_COST_MICROCENT + $tc" | bc -l )
 	ttusd=$(echo "scale=9; $TOTAL_COST_MICROCENT / 10000" | bc -l )
-	if $DEBUG_CALLS ; then (echo -n -e "\033[32m" ; echo "Debug output. Usage cost are " ; echo "$MODEL has microcent cost per 1K of $pi and $po" ; echo "There were $numi input and $numo output tokens" ; echo "Price for 1K token input is $(printf "%.4f" $usdi) and output is $(printf "%.4f" $usdo)" ; echo "Cost of this query was $(printf "%.4f" $tc) microcent or $(printf "%.7f" $tcusd) \$" ; echo "Total session cost so far $(printf "%.7f" $ttusd) \$" ; echo -n -e "\033[0m" ) >&2 ; fi
+	if $DEBUG_CALLS ; then (echo -n -e "\033[32m" ; echo "Debug output. Usage cost are " ; echo "$OPENAI_MODEL has microcent cost per 1K of $pi and $po" ; echo "There were $numi input and $numo output tokens" ; echo "Price for 1K token input is $(printf "%.4f" $usdi) and output is $(printf "%.4f" $usdo)" ; echo "Cost of this query was $(printf "%.4f" $tc) microcent or $(printf "%.7f" $tcusd) \$" ; echo "Total session cost so far $(printf "%.7f" $ttusd) \$" ; echo -n -e "\033[0m" ) >&2 ; fi
 
 cat <<EOF > /dev/null	
 Updated 2023-11-08 TODO: 
@@ -369,10 +369,10 @@ request_to_completions() {
 		-H 'Content-Type: application/json' \
 		-H "Authorization: Bearer $OPENAI_KEY" \
 		-d '{
-  			"model": "'"$MODEL"'",
+  			"model": "'"$OPENAI_MODEL"'",
   			"prompt": "'"$prompt"'",
-  			"max_tokens": '$MAX_TOKENS',
-  			"temperature": '$TEMPERATURE'
+  			"max_tokens": '$OPENAI_MAX_TOKENS',
+  			"temperature": '$OPENAI_TEMPERATURE'
 			}'
 }
 
@@ -413,13 +413,13 @@ request_to_chat() {
 		echo -n -e "\033[32m" >&2
 		echo "Debug output. Request to https://api.openai.com/v1/chat/completions is" >&2
 		echo '{
-            "model": "'"$MODEL"'",
+            "model": "'"$OPENAI_MODEL"'",
             "messages": [
                 {"role": "system", "content": "'"$escaped_system_prompt"'"},
                 '"$message"'
                 ],
-            "max_tokens": '$MAX_TOKENS',
-            "temperature": '$TEMPERATURE'
+            "max_tokens": '$OPENAI_MAX_TOKENS',
+            "temperature": '$OPENAI_TEMPERATURE'
 		}' >&2
 		echo -n -e "\033[0m" >&2
 	fi
@@ -429,13 +429,13 @@ request_to_chat() {
 		-H 'Content-Type: application/json' \
 		-H "Authorization: Bearer $OPENAI_KEY" \
 		-d '{
-            "model": "'"$MODEL"'",
+            "model": "'"$OPENAI_MODEL"'",
             "messages": [
                 {"role": "system", "content": "'"$escaped_system_prompt"'"},
                 '"$message"'
                 ],
-            "max_tokens": '$MAX_TOKENS',
-            "temperature": '$TEMPERATURE'
+            "max_tokens": '$OPENAI_MAX_TOKENS',
+            "temperature": '$OPENAI_TEMPERATURE'
             }'
 }
 
@@ -468,7 +468,7 @@ maintain_chat_context() {
 	chat_context="$chat_context${chat_context:+\n}\nA: $escaped_response_data"
 	# check prompt length, 1 word =~ 1.3 tokens
 	# reserving 100 tokens for next user prompt
-	while (($(echo "$chat_context" | wc -c) * 1, 3 > (MAX_TOKENS - 100))); do
+	while (($(echo "$chat_context" | wc -c) * 1, 3 > (OPENAI_MAX_TOKENS - 100))); do
 		# remove first/oldest QnA from prompt
 		chat_context=$(echo "$chat_context" | sed -n '/Q:/,$p' | tail -n +2)
 		# add init prompt so it is always on top
@@ -503,7 +503,7 @@ add_assistant_response_to_chat_message() {
 	local chat_message_json="[ $chat_message ]"
 	# check prompt length, 1 word =~ 1.3 tokens
 	# reserving 100 tokens for next user prompt
-	while (($(echo "$chat_message" | wc -c) * 1, 3 > (MAX_TOKENS - 100))); do
+	while (($(echo "$chat_message" | wc -c) * 1, 3 > (OPENAI_MAX_TOKENS - 100))); do
 		# remove first/oldest QnA from prompt
 		chat_message=$(echo "$chat_message_json" | jq -c '.[2:] | .[] | {role, content}')
 	done
@@ -537,12 +537,12 @@ while [[ "$#" -gt 0 ]]; do
 		shift
 		;;
 	-t | --temperature)
-		TEMPERATURE="$2"
+		OPENAI_TEMPERATURE="$2"
 		shift
 		shift
 		;;
 	--max-tokens)
-		MAX_TOKENS="$2"
+		OPENAI_MAX_TOKENS="$2"
 		shift
 		shift
 		;;
@@ -551,8 +551,8 @@ while [[ "$#" -gt 0 ]]; do
 		exit 0
 		;;
 	-m | --model)
-		MODEL="$2"
-		echo -e "Changed to model \033[31m${MODEL}\033[0m."
+		OPENAI_MODEL="$2"
+		echo -e "Changed to model \033[31m${OPENAI_MODEL}\033[0m."
 		shift
 		shift
 		;;
@@ -614,13 +614,13 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # set defaults
-TEMPERATURE=${TEMPERATURE:-0.7}
-MAX_TOKENS=${MAX_TOKENS:-1024}
-MODEL=${MODEL:-gpt-3.5-turbo}
+OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.7}
+OPENAI_MAX_TOKENS=${OPENAI_MAX_TOKENS:-1024}
+OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
 if [[ "$0" == *4 ]] ; then 
-	MODEL="gpt-4";
+	OPENAI_MODEL="gpt-4";
 fi
-echo -e "Using default model \033[31m${MODEL}\033[0m."
+echo -e "Using default model \033[31m${OPENAI_MODEL}\033[0m."
 SIZE=${SIZE:-256x256}
 NUMIMAGEGENS=${NUMIMAGEGENS:-1}
 CONTEXT=${CONTEXT:-false}
@@ -708,7 +708,7 @@ review_short() {
 }
 
 redisplay_chat() {
-	echo -e "Using default model \033[31m${MODEL}\033[0m."
+	echo -e "Using default model \033[31m${OPENAI_MODEL}\033[0m."
 	echo -e "Welcome to chatgpt. You can quit with '\033[36mexit\033[0m' or '\033[36mq\033[0m'."
 	length=$(echo "[${chat_message}]" | jq '. | length');
 	for ((i = 0; i < length; i++)); do
@@ -867,7 +867,7 @@ while $running; do
 
 	#add option to change model
 	elif [[ "$prompt" =~ ^cm(\\n)?$ ]]; then
-		if [[ "$MODEL" =~ ^gpt- ]]; then
+		if [[ "$OPENAI_MODEL" =~ ^gpt- ]]; then
 			echo "Type for ..."
 			echo "1 = gpt-4"
 			echo "2 = gpt-3.5-turbo"
@@ -887,39 +887,39 @@ while $running; do
 				MNEW="$switch_to_num"
 				;;
 			esac
-			echo -e "Changing from model \033[31m${MODEL}\033[0m to model \033[31m${MNEW}\033[0m."
-			MODEL=$MNEW
+			echo -e "Changing from model \033[31m${OPENAI_MODEL}\033[0m to model \033[31m${MNEW}\033[0m."
+			OPENAI_MODEL=$MNEW
 		else
 			echo "only available for chat models gpt-*"
 		fi
 	elif [[ "$prompt" =~ ^cm4(\\n)?$ ]]; then
-		if [[ "$MODEL" =~ ^gpt- ]]; then
+		if [[ "$OPENAI_MODEL" =~ ^gpt- ]]; then
 			MNEW="gpt-4"
-			echo -e "Changing from model \033[31m${MODEL}\033[0m to model \033[31m${MNEW}\033[0m."
-			MODEL=$MNEW
+			echo -e "Changing from model \033[31m${OPENAI_MODEL}\033[0m to model \033[31m${MNEW}\033[0m."
+			OPENAI_MODEL=$MNEW
 		else
 			echo "only available for chat models gpt-*"
 		fi
 	elif [[ "$prompt" =~ ^cm3(\\n)?$ ]]; then
-		if [[ "$MODEL" =~ ^gpt- ]]; then
+		if [[ "$OPENAI_MODEL" =~ ^gpt- ]]; then
 			MNEW="gpt-3.5-turbo"
-			echo -e "Changing from model \033[31m${MODEL}\033[0m to model \033[31m${MNEW}\033[0m."
-			MODEL=$MNEW
+			echo -e "Changing from model \033[31m${OPENAI_MODEL}\033[0m to model \033[31m${MNEW}\033[0m."
+			OPENAI_MODEL=$MNEW
 		else
 			echo "only available for chat models gpt-*"
 		fi
 	elif [[ "$prompt" =~ ^cm:([a-zA-Z0-9.-]+)(\\n)?$ ]]; then
 		MNEW="${BASH_REMATCH[1]}"
-		if [[ "$MNEW" =~ ^gpt- ]] && [[ "$MODEL" =~ ^gpt- ]]; then
-			echo -e "Changing from model \033[31m${MODEL}\033[0m to model \033[31m${MNEW}\033[0m."
-			MODEL=$MNEW
+		if [[ "$MNEW" =~ ^gpt- ]] && [[ "$OPENAI_MODEL" =~ ^gpt- ]]; then
+			echo -e "Changing from model \033[31m${OPENAI_MODEL}\033[0m to model \033[31m${MNEW}\033[0m."
+			OPENAI_MODEL=$MNEW
 		else
 			echo "only available for chat models gpt-*"
 		fi
 
 	elif [[ "$prompt" =~ ^(review|rv)(\\n)?$ ]]; then
 		#show current chat so far
-		if [[ "$MODEL" =~ ^gpt- ]]; then
+		if [[ "$OPENAI_MODEL" =~ ^gpt- ]]; then
 			echo "Here is the previous chat in full:"
 			review_full
 		else
@@ -927,7 +927,7 @@ while $running; do
 		fi
 	elif [[ "$prompt" =~ ^(redisplaychat|rd)(\\n)?$ ]]; then
 		#redisplay chat in chatstyle
-		if [[ "$MODEL" =~ ^gpt- ]]; then
+		if [[ "$OPENAI_MODEL" =~ ^gpt- ]]; then
 			echo "Re-displaying the chat."
 			echo -ne "Would you like to \033[31mreset\033[0m the screen? "
 			read -p "(y, yes or <return> to reset) " choice
@@ -940,7 +940,7 @@ while $running; do
 		fi
 	elif [[ "$prompt" =~ ^(reviewshort|rs)(\\n)?$ ]]; then
 		#show current chat so far abbreviated
-		if [[ "$MODEL" =~ ^gpt- ]]; then
+		if [[ "$OPENAI_MODEL" =~ ^gpt- ]]; then
 			echo "Here is the previous chat truncated to 50 characters:"
 			review_short
 		else
@@ -948,14 +948,14 @@ while $running; do
 		fi
 	elif [[ "$prompt" =~ ^(truncate|tr)(\\n)?$ ]]; then
 		#truncate current chat 
-		if [[ "$MODEL" =~ ^gpt- ]]; then
+		if [[ "$OPENAI_MODEL" =~ ^gpt- ]]; then
 			truncate_chat
 		else
 			echo "only available for chat models gpt-*"
 		fi
 	elif [[ "$prompt" =~ ^(recall|rc)(\\n)?$ ]]; then
 		#recall a previous chat
-		if [[ "$MODEL" =~ ^gpt- ]]; then
+		if [[ "$OPENAI_MODEL" =~ ^gpt- ]]; then
 			tail -10 "$CHATHIST_INDEX"
 			echo -e "\nEnter the number of the chat to recall:"
 			read -e chattorecall
@@ -965,7 +965,7 @@ while $running; do
 		fi
 	elif [[ "$prompt" =~ ^(recallfull|rcf)(\\n)?$ ]]; then
 		#recall history
-		if [[ "$MODEL" =~ ^gpt- ]]; then
+		if [[ "$OPENAI_MODEL" =~ ^gpt- ]]; then
 			less "$CHATHIST_INDEX"
 			echo -e "\nEnter the number of the chat to recall:"
 			read -e chattorecall
@@ -975,7 +975,7 @@ while $running; do
 		fi
 	elif [[ "$prompt" =~ ^rc:([0-9]+) ]]; then
 		NUM="${BASH_REMATCH[1]}"
-		if [[ "$MODEL" =~ ^gpt- ]]; then
+		if [[ "$OPENAI_MODEL" =~ ^gpt- ]]; then
 			recall_chat "$NUM"
 		else
 			echo "only available for chat models gpt-*"
@@ -1076,7 +1076,7 @@ while $running; do
 
 		timestamp=$(date +"%Y-%m-%d %H:%M")
 		if $SAVE_HISTORY ; then echo -e "$timestamp $prompt \n$response_data \n" >>~/.chatgpt_history ; fi
-	elif [[ "$MODEL" =~ ^gpt- ]]; then
+	elif [[ "$OPENAI_MODEL" =~ ^gpt- ]]; then
 		if [ ${#prompt} -lt 3 ] ; then
 		echo -ne "\033[31mWARNING: Very short prompt!\033[0m "
 			read -p "Send to ChatGPT or renter? (y, yes or <return> to send) " choice
