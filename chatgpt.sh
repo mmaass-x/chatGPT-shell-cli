@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # modified by K.O. Bold
 # * extended to have a chat history that can be picked up
 # * fixed quit with multiline by adding escaped newlines in command reads; including fixof "-b | --big-prompt parameter (removed --multi-line-prompt)
