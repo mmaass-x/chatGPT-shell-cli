@@ -29,6 +29,7 @@ RECALL_A_CHAT=false
 DEBUG_CALLS=false
 MD_INTERPRETATION=true
 SAVE_HISTORY=true
+NEW_CHAT_MODE=false
 SHOW_INTERMEDIATE_COST=true
 TOTAL_COST_MICROCENT=0
 
@@ -81,6 +82,7 @@ Options:
   --fold					 Wrap output in given number of colums
   --nh                       No history - don't save any history data
   --no-call-cost             Do not show cost information per call
+  --ncm                      "New-Chat-Mode" - always start new chat for every question
 EOF
 }
 
@@ -114,6 +116,7 @@ Commands:
   tr             [short]
   newchat -      To start a new chat
   nc             [short]
+  ncm            Toogle "New-Chat-Mode" - always start new chat for every question
   md -           Toggle "md-only" option to output clean markdown or us mdcat
   				 or glow
   models -       To get a list of the models available at OpenAI API
@@ -592,18 +595,23 @@ while [[ "$#" -gt 0 ]]; do
 		;;
 	--nh )
 		SAVE_HISTORY=false
+		echo "No History will be saved"
 		echo -e "Call parameter --nh. No history will be saved\n" >>~/.chatgpt_history
 		shift
 		;;
 	--no-call-cost )
 		SHOW_INTERMEDIATE_COST=false
-		echo -e "Call parameter --nh. No history will be saved\n" >>~/.chatgpt_history
 		shift
 		;;
 	--fold )
 		FOLD=true
 		FCOLUMNS="$2"
 		shift
+		shift
+		;;
+	--ncm )
+		NEW_CHAT_MODE=true
+		echo "New-Chat-Mode activated"
 		shift
 		;;
 	*)
@@ -747,7 +755,7 @@ recall_chat() {
 	 file_name="${CHATHISTDIR}/${NUM}.json"
 	 if [ -e "$file_name" ]; then
 		 if [[ ! -z "${chat_message}" ]]; then
-			 save_hist_json_to_file "${chat_message}"
+			 if $SAVE_HISTORY ; then save_hist_json_to_file "${chat_message}" ; fi
 		 fi
 		 chat_message=$(cat "$file_name")
 		 chat_recall_number=$NUM
@@ -775,6 +783,17 @@ truncate_chat() {
 	else
 		echo "${trn} out of range"
 	fi
+}
+
+clear_chat() {
+	if [[ ! -z "${chat_message}" ]]; then
+		if $SAVE_HISTORY ; then save_hist_json_to_file "${chat_message}" ; fi
+	fi		
+	#clear
+	chat_message=""
+	chat_context=""
+	chat_recall_number=""
+	echo "Starting new chat."
 }
 
 if $RECALL_A_CHAT ; then
@@ -855,15 +874,7 @@ while $running; do
 			echo "Will output plain markdown"
 		fi
 	elif [[ $prompt =~ ^(newchat|nc)(\\n)?$ ]] ; then
-		#save history
-		if [[ ! -z "${chat_message}" ]]; then
-			save_hist_json_to_file "${chat_message}"
-		fi		
-		#clear
-		chat_message=""
-		chat_context=""
-		chat_recall_number=""
-		echo "Starting new chat."
+		clear_chat
 
 	#add option to change model
 	elif [[ "$prompt" =~ ^cm(\\n)?$ ]]; then
@@ -979,6 +990,14 @@ while $running; do
 			recall_chat "$NUM"
 		else
 			echo "only available for chat models gpt-*"
+		fi
+	elif [[ "$prompt" =~ ^(ncm)(\\n)?$  ]]; then
+		if $NEW_CHAT_MODE ; then
+			NEW_CHAT_MODE=false
+			echo "New-Chat-Mode de-activated"
+		else
+			NEW_CHAT_MODE=true
+			echo "New-Chat-Mode activated"
 		fi
 	elif [[ "$prompt" =~ ^image: ]]; then
 		request_to_image "$prompt"
@@ -1118,6 +1137,8 @@ while $running; do
 
 		timestamp=$(date +"%Y-%m-%d %H:%M")
 		if $SAVE_HISTORY ; then echo -e "$timestamp $prompt \n$response_data \n" >>~/.chatgpt_history ; fi
+
+		if $NEW_CHAT_MODE ; then clear_chat ; fi
 	else
 		# escape quotation marks, new lines, backslashes...
 		request_prompt=$(escape "$prompt")
@@ -1164,7 +1185,7 @@ done
 # if running on pipe mode, exit here
 if [ ! -z "$pipe_mode_prompt" ]; then
 	if [[ ! -z "${chat_message}" ]]; then
-		save_hist_json_to_file "${chat_message}"
+		if $SAVE_HISTORY ; then save_hist_json_to_file "${chat_message}" ; fi
 	fi
 	#print session cost
 	ttusd=$(echo "scale=9; $TOTAL_COST_MICROCENT / 10000" | bc -l )
