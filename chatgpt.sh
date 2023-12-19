@@ -628,6 +628,9 @@ OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
 if [[ "$0" == *4 ]] ; then 
 	OPENAI_MODEL="gpt-4";
 fi
+if [[ "$0" == *3 ]] ; then 
+	OPENAI_MODEL="gpt-3.5-turbo";
+fi
 echo -e "Using default model \033[31m${OPENAI_MODEL}\033[0m."
 SIZE=${SIZE:-256x256}
 NUMIMAGEGENS=${NUMIMAGEGENS:-1}
